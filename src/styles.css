@@ -1,0 +1,17 @@
+html,
+body {
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  line-height: 0;
+  font-family: ui-sans-serif, system-ui, "Segoe UI";
+}
+
+canvas {
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
