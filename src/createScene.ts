@@ -1,9 +1,13 @@
 import { Scene, PerspectiveCamera, WebGLRenderer } from "three";
 
+type ThreeScene = {
+  scene: Scene;
+  camera: PerspectiveCamera;
+  update: () => void;
+};
+
 export interface CreateSceneClass {
-  createScene: (
-    renderer: WebGLRenderer
-  ) => Promise<{ scene: Scene; camera: PerspectiveCamera }>;
+  createScene: (renderer: WebGLRenderer) => Promise<ThreeScene>;
 }
 
 export interface CreateSceneModule {
