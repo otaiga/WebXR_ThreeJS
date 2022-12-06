@@ -12,3 +12,5 @@ Basic implementation of a WebXR scene using ThreeJS.
 - Clone this repo
 - `npm install`
 - `npm start`
+
+[Give it a try!](https://otaiga.github.io/WebXR_ThreeJS)

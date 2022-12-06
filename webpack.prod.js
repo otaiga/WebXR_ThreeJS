@@ -5,6 +5,6 @@ module.exports = merge(common, {
   mode: "production",
   devtool: "source-map",
   output: {
-    publicPath: "/",
+    publicPath: "/WebXR_ThreeJS/",
   },
 });
