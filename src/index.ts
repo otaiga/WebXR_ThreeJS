@@ -37,19 +37,10 @@ const threeInit = async (): Promise<void> => {
   window.addEventListener("resize", onWindowResize);
 
   // Update loop
-  const animate = () => {
-    threeScene.update();
-    requestAnimationFrame(animate);
-    renderer.render(threeScene.scene, threeScene.camera);
-  };
-
-  // WebXR update loop
   renderer.setAnimationLoop(() => {
     threeScene.update();
     renderer.render(threeScene.scene, threeScene.camera);
   });
-
-  animate();
 };
 
 threeInit().then(() => {
