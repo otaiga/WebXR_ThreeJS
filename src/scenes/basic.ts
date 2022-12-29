@@ -9,9 +9,10 @@ import {
   sRGBEncoding,
   WebGLRenderer,
 } from "three";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { CreateSceneClass } from "../createScene";
 
-export class MainScreen implements CreateSceneClass {
+export class BasicScreen implements CreateSceneClass {
   createScene = async (
     renderer: WebGLRenderer
   ): Promise<{
@@ -34,7 +35,7 @@ export class MainScreen implements CreateSceneClass {
     const geometry = new BoxGeometry(1, 1, 1);
     const material = new MeshBasicMaterial({ color: 0x00ff00 });
     const cube = new Mesh(geometry, material);
-    cube.position.set(0, 2, 0);
+    cube.position.set(0, 0, 0);
     scene.add(cube);
 
     // Add light
@@ -44,6 +45,10 @@ export class MainScreen implements CreateSceneClass {
     scene.add(light);
 
     renderer.outputEncoding = sRGBEncoding;
+
+    // Add controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.update();
 
     // Update next tick before render
     const update = () => {
@@ -55,4 +60,4 @@ export class MainScreen implements CreateSceneClass {
   };
 }
 
-export default new MainScreen();
+export default new BasicScreen();
