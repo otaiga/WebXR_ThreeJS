@@ -9,10 +9,14 @@ import {
   WebGLRenderer,
 } from "three";
 import { VRButton } from "three/examples/jsm/webxr/VRButton";
-import { GLTF, GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { CreateSceneClass } from "../createScene";
+import { loadAssets } from "../support/assetLoader";
+import {
+  hideCustomLoadingBar,
+  showCustomLoadingBar,
+} from "../support/customLoadingBar";
 
 export class MainScreen implements CreateSceneClass {
   createScene = async (
@@ -22,8 +26,6 @@ export class MainScreen implements CreateSceneClass {
     camera: PerspectiveCamera;
     update: () => void;
   }> => {
-    // Allow loading of gltf files
-    const loader = new GLTFLoader();
     const generator = new PMREMGenerator(renderer);
 
     // Create skybox
@@ -48,9 +50,6 @@ export class MainScreen implements CreateSceneClass {
     light.position.set(1, 1, 1).normalize();
     scene.add(light);
 
-    // Append the VR button to the dom
-    document.body.appendChild(VRButton.createButton(renderer));
-
     // Enable XR
     renderer.xr.enabled = true;
 
@@ -61,32 +60,16 @@ export class MainScreen implements CreateSceneClass {
     controls.target.set(0, 2, 0);
     controls.update();
 
-    const loadAssets = () =>
-      new Promise<GLTF>((resolve, reject) => {
-        // Load a glTF resource
-        loader.load(
-          // resource URL
-          "assets/models/snowScene.glb",
-          // called when the resource is loaded
-          (gltf) => {
-            resolve(gltf);
-          },
-          // called while loading is progressing
-          (xhr) => {
-            console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
-          },
-          // called when loading has errors
-          (error) => {
-            console.log("An error happened: ", error.message);
-            reject(error);
-          }
-        );
-      });
+    showCustomLoadingBar();
 
-    const gltf = await loadAssets();
-    scene.add(gltf.scene);
+    const assets = await loadAssets();
+    const snowSceneAsset = assets.models["snowScene.glb"];
+
+    scene.add(snowSceneAsset.scene);
     let snowMat;
-    const loadedMaterials = await gltf.parser.getDependencies("material");
+    const loadedMaterials = await snowSceneAsset.parser.getDependencies(
+      "material"
+    );
     for (const material of loadedMaterials) {
       if (material.name === "Snow") {
         snowMat = material;
@@ -103,6 +86,12 @@ export class MainScreen implements CreateSceneClass {
 
     // Update next tick before render
     const update = () => {};
+
+    hideCustomLoadingBar();
+
+    // Append the VR button to the dom
+    const vrButton = VRButton.createButton(renderer);
+    document.body.appendChild(vrButton);
 
     return { scene, camera, update };
   };
