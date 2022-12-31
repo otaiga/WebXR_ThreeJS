@@ -23,7 +23,7 @@ const resizeLoadingUI = () => {
 
 export const showCustomLoadingBar = () => {
   if (loadingDiv) {
-    return;
+    return loadingDiv;
   }
   loadingDiv = document.createElement("div");
   loadingDiv.id = "loadingDiv";
@@ -33,7 +33,7 @@ export const showCustomLoadingBar = () => {
   loadingDiv.style.pointerEvents = "none";
   loadingDiv.style.opacity = "1";
   loadingDiv.style.backgroundColor = "black";
-  loadingDiv.style.zIndex = "-12";
+  loadingDiv.style.zIndex = "-1";
   loadingDiv.style.transition = "opacity 1.5s ease";
 
   // loading container
@@ -107,6 +107,7 @@ export const showCustomLoadingBar = () => {
   resizeLoadingUI();
 
   document.body.insertBefore(loadingDiv, canvas);
+  return loadingDiv;
 };
 
 export const hideCustomLoadingBar = () => {

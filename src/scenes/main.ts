@@ -8,7 +8,7 @@ import {
   Scene,
   WebGLRenderer,
 } from "three";
-import { VRButton } from "three/examples/jsm/webxr/VRButton";
+import { createButton } from "../support/customVRButton";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { CreateSceneClass } from "../createScene";
@@ -60,7 +60,7 @@ export class MainScreen implements CreateSceneClass {
     controls.target.set(0, 2, 0);
     controls.update();
 
-    showCustomLoadingBar();
+    const loadingElem = showCustomLoadingBar();
 
     const assets = await loadAssets();
     const snowSceneAsset = assets.models["snowScene.glb"];
@@ -86,12 +86,14 @@ export class MainScreen implements CreateSceneClass {
 
     // Update next tick before render
     const update = () => {};
-
-    hideCustomLoadingBar();
+    // Create custom VR Button
+    const vrButton = await createButton(renderer);
 
     // Append the VR button to the dom
-    const vrButton = VRButton.createButton(renderer);
-    document.body.appendChild(vrButton);
+    document.body.insertBefore(vrButton, loadingElem);
+
+    // Hide the loading screen
+    hideCustomLoadingBar();
 
     return { scene, camera, update };
   };
