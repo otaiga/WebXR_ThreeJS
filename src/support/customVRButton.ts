@@ -14,8 +14,6 @@ const registerSessionGrantedListener = () => {
   }
 };
 
-registerSessionGrantedListener();
-
 export const createButton = async (renderer: WebGLRenderer) => {
   let currentSession: any = null;
   const button = document.createElement("button");
@@ -156,3 +154,5 @@ export const createButton = async (renderer: WebGLRenderer) => {
     return message;
   }
 };
+
+registerSessionGrantedListener();
