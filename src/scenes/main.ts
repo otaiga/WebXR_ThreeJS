@@ -1,12 +1,18 @@
 import {
+  BackSide,
   DirectionalLight,
   HemisphereLight,
+  Matrix4,
   Mesh,
+  MeshBasicMaterial,
   PerspectiveCamera,
   PlaneGeometry,
   PMREMGenerator,
+  Raycaster,
   Scene,
+  SphereGeometry,
   WebGLRenderer,
+  XRTargetRaySpace,
 } from "three";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
@@ -27,6 +33,8 @@ export class MainScreen implements CreateSceneClass {
     update: () => void;
   }> => {
     const generator = new PMREMGenerator(renderer);
+    const workingMatrix = new Matrix4();
+    const raycaster = new Raycaster();
 
     // Create skybox
     new RGBELoader().load("assets/textures/snowy_park.hdr", (hdrmap) => {
@@ -84,8 +92,56 @@ export class MainScreen implements CreateSceneClass {
       scene.add(ground);
     }
 
+    // Add a sphere
+    const geometry = new SphereGeometry(0.8, 20);
+    const material = new MeshBasicMaterial({ color: 0x00ff00 });
+    const sphere = new Mesh(geometry, material);
+    sphere.position.set(0, 1, -4);
+    scene.add(sphere);
+
+    const sphereHighlight = new Mesh(
+      geometry,
+      new MeshBasicMaterial({ color: 0xffffff, side: BackSide })
+    );
+    sphereHighlight.scale.set(1.2, 1.2, 1.2);
+    scene.add(sphereHighlight);
+    sphereHighlight.visible = false;
+
     // Create Controllerss
     const controllers = createControllers(renderer, scene);
+
+    for (const controller of controllers) {
+      controller.addEventListener("selectstart", () => {
+        controller.children[0].scale.z = 10;
+        controller.userData.selectPressed = true;
+      });
+
+      controller.addEventListener("selectend", () => {
+        controller.children[0].scale.z = 0;
+        sphereHighlight.visible = false;
+        controller.userData.selectPressed = false;
+      });
+    }
+
+    const leftController = controllers[0];
+
+    const handleController = (controller: XRTargetRaySpace) => {
+      if (controller.userData.selectPressed) {
+        workingMatrix.identity().extractRotation(controller.matrixWorld);
+
+        raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
+        raycaster.ray.direction.set(0, 0, -1).applyMatrix4(workingMatrix);
+
+        const intersects = raycaster.intersectObjects([sphere]);
+
+        if (intersects.length > 0) {
+          intersects[0].object.add(sphereHighlight);
+          sphereHighlight.visible = true;
+        } else {
+          sphereHighlight.visible = false;
+        }
+      }
+    };
 
     // Create custom VR Button
     const vrButton = await createButton(renderer);
@@ -94,7 +150,11 @@ export class MainScreen implements CreateSceneClass {
     document.body.insertBefore(vrButton, loadingElem);
 
     // Update next tick before render
-    const update = () => {};
+    const update = () => {
+      if (leftController) {
+        handleController(leftController);
+      }
+    };
 
     // Hide the loading screen
     hideCustomLoadingBar();
