@@ -1,20 +1,52 @@
-import { WebGLRenderer } from "three";
+import { Vector3, BufferGeometry, Line, WebGLRenderer, Scene } from "three";
+import { XRControllerModelFactory } from "three/examples/jsm/webxr/XRControllerModelFactory";
 
-let xrSessionIsGranted = false;
+export const createControllers = (renderer: WebGLRenderer, scene: Scene) => {
+  const controllerModelFactory = new XRControllerModelFactory();
 
-const registerSessionGrantedListener = () => {
-  if (navigator.xr) {
-    // WebXRViewer (based on Firefox) has a bug where addEventListener
-    // throws a silent exception and aborts execution entirely.
-    if (/WebXRViewer\//i.test(navigator.userAgent)) return;
+  const geometry = new BufferGeometry().setFromPoints([
+    new Vector3(0, 0, 0),
+    new Vector3(0, 0, -1),
+  ]);
 
-    navigator.xr.addEventListener("sessiongranted", () => {
-      xrSessionIsGranted = true;
-    });
+  const line = new Line(geometry);
+  line.name = "line";
+  line.scale.z = 10;
+
+  const controllers = [];
+
+  for (let i = 0; i <= 1; i++) {
+    const controller = renderer.xr.getController(i);
+    controller.add(line.clone());
+    controller.userData.selectPressed = false;
+    scene.add(controller);
+
+    controllers.push(controller);
+
+    const grip = renderer.xr.getControllerGrip(i);
+    grip.add(controllerModelFactory.createControllerModel(grip));
+    scene.add(grip);
   }
+
+  return controllers;
 };
 
 export const createButton = async (renderer: WebGLRenderer) => {
+  let xrSessionIsGranted = false;
+
+  const registerSessionGrantedListener = () => {
+    if (navigator.xr) {
+      // WebXRViewer (based on Firefox) has a bug where addEventListener
+      // throws a silent exception and aborts execution entirely.
+      if (/WebXRViewer\//i.test(navigator.userAgent)) return;
+
+      navigator.xr.addEventListener("sessiongranted", () => {
+        xrSessionIsGranted = true;
+      });
+    }
+  };
+
+  registerSessionGrantedListener();
   let currentSession: any = null;
   const button = document.createElement("button");
   button.style.display = "";
@@ -81,8 +113,9 @@ export const createButton = async (renderer: WebGLRenderer) => {
     button.style.display = "";
 
     button.style.cursor = "auto";
-    button.style.left = "calc(50% - 75px)";
-    button.style.width = "150px";
+    button.style.left = "0";
+    button.style.width = "100%";
+    button.style.background = "red";
 
     button.onmouseenter = null;
     button.onmouseleave = null;
@@ -154,5 +187,3 @@ export const createButton = async (renderer: WebGLRenderer) => {
     return message;
   }
 };
-
-registerSessionGrantedListener();

@@ -8,7 +8,6 @@ import {
   Scene,
   WebGLRenderer,
 } from "three";
-import { createButton } from "../support/customVRButton";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { CreateSceneClass } from "../createScene";
@@ -17,6 +16,7 @@ import {
   hideCustomLoadingBar,
   showCustomLoadingBar,
 } from "../support/customLoadingBar";
+import { createButton, createControllers } from "../support/xrSupport";
 
 export class MainScreen implements CreateSceneClass {
   createScene = async (
@@ -84,13 +84,17 @@ export class MainScreen implements CreateSceneClass {
       scene.add(ground);
     }
 
-    // Update next tick before render
-    const update = () => {};
+    // Create Controllerss
+    const controllers = createControllers(renderer, scene);
+
     // Create custom VR Button
     const vrButton = await createButton(renderer);
 
     // Append the VR button to the dom
     document.body.insertBefore(vrButton, loadingElem);
+
+    // Update next tick before render
+    const update = () => {};
 
     // Hide the loading screen
     hideCustomLoadingBar();
