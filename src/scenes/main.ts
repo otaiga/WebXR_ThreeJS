@@ -219,37 +219,45 @@ export class MainScreen implements CreateSceneClass {
             };
 
             // map thumb sticks
-            if (data.handedness === "left") {
-              const speed = 2;
-              let pos = dolly.position.clone();
-              data.axes.map((value, i) => {
-                if (Math.abs(value) > 0.2) {
-                  //left and right axis on thumbsticks
-                  if (i === 2) {
+            const speed = 2;
+            let pos = dolly.position.clone();
+            data.axes.map((value, i) => {
+              if (Math.abs(value) > 0.2) {
+                //left and right axis on thumbsticks
+                if (i === 2) {
+                  if (data.handedness === "left") {
                     if (data.axes[2] > 0) {
-                      dolly.rotation.y -= dt * 1;
-                      console.log("left on left thumbstick");
+                      pos.x += 1;
+                      dolly.translateX(dt * speed);
                     } else {
-                      dolly.rotation.y += dt * 1;
-                      console.log("right on left thumbstick");
+                      pos.x -= 1;
+                      dolly.translateX(-dt * speed);
                     }
-                    pos = dolly.getWorldPosition(origin);
-                  }
-                  //up and down axis on thumbsticks
-                  if (i === 3) {
-                    if (data.axes[3] > 0) {
-                      pos.z += 1;
-                      dolly.translateZ(dt * speed);
-                      console.log("up on left thumbstick");
+                  } else {
+                    if (data.axes[2] > 0) {
+                      dolly.rotation.y -= dt * speed * 1;
                     } else {
-                      pos.z -= 1;
-                      dolly.translateZ(-dt * speed);
-                      console.log("down on left thumbstick");
+                      dolly.rotation.y += dt * speed * 1;
                     }
                   }
+                  pos = dolly.getWorldPosition(origin);
                 }
-              });
-            }
+                //up and down axis on thumbsticks
+                if (i === 3) {
+                  if (data.handedness === "right") {
+                    return;
+                  }
+                  if (data.axes[3] > 0) {
+                    pos.z += 1;
+                    dolly.translateZ(dt * speed);
+                  } else {
+                    pos.z -= 1;
+                    dolly.translateZ(-dt * speed);
+                  }
+                  pos = dolly.getWorldPosition(origin);
+                }
+              }
+            });
           }
         }
         handleController();
