@@ -20,9 +20,8 @@ export const createControllers = (renderer: WebGLRenderer, scene: Scene) => {
     controller.add(line.clone());
     controller.userData.selectPressed = false;
     const grip = renderer.xr.getControllerGrip(i);
-    grip.add(controllerModelFactory.createControllerModel(grip));
-    scene.add(controller);
-    scene.add(grip);
+    const controllerModel = controllerModelFactory.createControllerModel(grip);
+    grip.add(controllerModel);
     controllers.push({ controller, grip });
   }
 

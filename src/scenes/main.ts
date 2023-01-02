@@ -1,16 +1,19 @@
 import {
   BackSide,
+  Clock,
   DirectionalLight,
   HemisphereLight,
   Matrix4,
   Mesh,
   MeshBasicMaterial,
+  Object3D,
   PerspectiveCamera,
   PlaneGeometry,
   PMREMGenerator,
   Raycaster,
   Scene,
   SphereGeometry,
+  Vector3,
   WebGLRenderer,
 } from "three";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
@@ -35,6 +38,8 @@ export class MainScreen implements CreateSceneClass {
     const generator = new PMREMGenerator(renderer);
     const workingMatrix = new Matrix4();
     const raycaster = new Raycaster();
+    const clock = new Clock();
+    const origin = new Vector3();
 
     // Create skybox
     new RGBELoader().load("assets/textures/snowy_park.hdr", (hdrmap) => {
@@ -44,6 +49,8 @@ export class MainScreen implements CreateSceneClass {
     });
 
     const scene = new Scene();
+
+    // create camera
     const camera = new PerspectiveCamera(
       60,
       window.innerWidth / window.innerHeight,
@@ -51,6 +58,14 @@ export class MainScreen implements CreateSceneClass {
       100
     );
     camera.position.set(0, 1.6, 3);
+
+    // create dolly for moving camera
+    const dolly = new Object3D();
+    dolly.add(camera);
+    scene.add(dolly);
+
+    const dummyCam = new Object3D();
+    camera.add(dummyCam);
 
     // Add light
     scene.add(new HemisphereLight(0x606060, 0x404040));
@@ -147,23 +162,25 @@ export class MainScreen implements CreateSceneClass {
           createSpotLight(event, controllerGroup, assets);
         }
       });
+      dolly.add(controllerGroup.controller);
+      dolly.add(controllerGroup.grip);
     }
 
     const handleController = () => {
-      const controllerGroup =
-        controllers[0].controller.name === "leftController"
+      const rightControllerGroup =
+        controllers[0].controller.name === "rightController"
           ? controllers[0]
           : controllers[1];
       if (
-        controllerGroup.controller &&
-        controllerGroup.controller.userData.selectPressed
+        rightControllerGroup.controller &&
+        rightControllerGroup.controller.userData.selectPressed
       ) {
         workingMatrix
           .identity()
-          .extractRotation(controllerGroup.controller.matrixWorld);
+          .extractRotation(rightControllerGroup.controller.matrixWorld);
 
         raycaster.ray.origin.setFromMatrixPosition(
-          controllerGroup.controller.matrixWorld
+          rightControllerGroup.controller.matrixWorld
         );
         raycaster.ray.direction.set(0, 0, -1).applyMatrix4(workingMatrix);
 
@@ -185,7 +202,58 @@ export class MainScreen implements CreateSceneClass {
 
     // Update next tick before render
     const update = () => {
-      handleController();
+      const dt = clock.getDelta();
+      // check for xr session
+      const session = renderer.xr.getSession();
+      if (session) {
+        let i = 0;
+        // get button pushes and axis
+        for (const inputSource of session.inputSources) {
+          const gamepad = inputSource?.gamepad;
+          if (inputSource && gamepad) {
+            // map data to use with controllers
+            const data = {
+              handedness: inputSource.handedness,
+              buttons: inputSource.gamepad.buttons.map((b) => b.value),
+              axes: inputSource.gamepad.axes.slice(0),
+            };
+
+            // map thumb sticks
+            if (data.handedness === "left") {
+              const speed = 2;
+              let pos = dolly.position.clone();
+              data.axes.map((value, i) => {
+                if (Math.abs(value) > 0.2) {
+                  //left and right axis on thumbsticks
+                  if (i === 2) {
+                    if (data.axes[2] > 0) {
+                      dolly.rotation.y -= dt * 1;
+                      console.log("left on left thumbstick");
+                    } else {
+                      dolly.rotation.y += dt * 1;
+                      console.log("right on left thumbstick");
+                    }
+                    pos = dolly.getWorldPosition(origin);
+                  }
+                  //up and down axis on thumbsticks
+                  if (i === 3) {
+                    if (data.axes[3] > 0) {
+                      pos.z += 1;
+                      dolly.translateZ(dt * speed);
+                      console.log("up on left thumbstick");
+                    } else {
+                      pos.z -= 1;
+                      dolly.translateZ(-dt * speed);
+                      console.log("down on left thumbstick");
+                    }
+                  }
+                }
+              });
+            }
+          }
+        }
+        handleController();
+      }
     };
 
     // Hide the loading screen
