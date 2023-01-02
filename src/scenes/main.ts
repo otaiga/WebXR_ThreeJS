@@ -12,7 +12,6 @@ import {
   Scene,
   SphereGeometry,
   WebGLRenderer,
-  XRTargetRaySpace,
 } from "three";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
@@ -23,6 +22,7 @@ import {
   showCustomLoadingBar,
 } from "../support/customLoadingBar";
 import { createButton, createControllers } from "../support/xrSupport";
+import { createSpotLight } from "../support/torchController";
 
 export class MainScreen implements CreateSceneClass {
   createScene = async (
@@ -93,10 +93,10 @@ export class MainScreen implements CreateSceneClass {
     }
 
     // Add a sphere
-    const geometry = new SphereGeometry(0.8, 20);
+    const geometry = new SphereGeometry(0.2, 20);
     const material = new MeshBasicMaterial({ color: 0x00ff00 });
     const sphere = new Mesh(geometry, material);
-    sphere.position.set(0, 1, -4);
+    sphere.position.set(5, 1, -8);
     scene.add(sphere);
 
     const sphereHighlight = new Mesh(
@@ -104,32 +104,67 @@ export class MainScreen implements CreateSceneClass {
       new MeshBasicMaterial({ color: 0xffffff, side: BackSide })
     );
     sphereHighlight.scale.set(1.2, 1.2, 1.2);
-    scene.add(sphereHighlight);
-    sphereHighlight.visible = false;
 
     // Create Controllerss
     const controllers = createControllers(renderer, scene);
 
-    for (const controller of controllers) {
-      controller.addEventListener("selectstart", () => {
-        controller.children[0].scale.z = 10;
-        controller.userData.selectPressed = true;
+    for (const controllerGroup of controllers) {
+      controllerGroup.controller.addEventListener("selectstart", () => {
+        for (const child of controllerGroup.controller.children) {
+          if (child.name === "line") {
+            child.scale.z = 10;
+          }
+          if (child.name === "spotlight" && !child.visible) {
+            child.visible = true;
+          }
+        }
+        controllerGroup.controller.userData.selectPressed = true;
       });
 
-      controller.addEventListener("selectend", () => {
-        controller.children[0].scale.z = 0;
-        sphereHighlight.visible = false;
-        controller.userData.selectPressed = false;
+      controllerGroup.controller.addEventListener("selectend", () => {
+        for (const child of controllerGroup.controller.children) {
+          if (child.name === "line") {
+            child.scale.z = 0;
+            sphereHighlight.visible = false;
+          }
+          if (child.name === "spotlight" && child.visible) {
+            child.visible = false;
+          }
+        }
+        controllerGroup.controller.userData.selectPressed = false;
+      });
+
+      controllerGroup.controller.addEventListener("disconnected", () => {
+        controllerGroup.controller.remove(
+          ...controllerGroup.controller.children
+        );
+      });
+
+      controllerGroup.controller.addEventListener("connected", (event) => {
+        const handedness = event.data.handedness;
+        controllerGroup.controller.name = `${handedness}Controller`;
+        if (handedness === "left") {
+          createSpotLight(event, controllerGroup, assets);
+        }
       });
     }
 
-    const leftController = controllers[0];
+    const handleController = () => {
+      const controllerGroup =
+        controllers[0].controller.name === "leftController"
+          ? controllers[0]
+          : controllers[1];
+      if (
+        controllerGroup.controller &&
+        controllerGroup.controller.userData.selectPressed
+      ) {
+        workingMatrix
+          .identity()
+          .extractRotation(controllerGroup.controller.matrixWorld);
 
-    const handleController = (controller: XRTargetRaySpace) => {
-      if (controller.userData.selectPressed) {
-        workingMatrix.identity().extractRotation(controller.matrixWorld);
-
-        raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
+        raycaster.ray.origin.setFromMatrixPosition(
+          controllerGroup.controller.matrixWorld
+        );
         raycaster.ray.direction.set(0, 0, -1).applyMatrix4(workingMatrix);
 
         const intersects = raycaster.intersectObjects([sphere]);
@@ -145,15 +180,12 @@ export class MainScreen implements CreateSceneClass {
 
     // Create custom VR Button
     const vrButton = await createButton(renderer);
-
     // Append the VR button to the dom
     document.body.insertBefore(vrButton, loadingElem);
 
     // Update next tick before render
     const update = () => {
-      if (leftController) {
-        handleController(leftController);
-      }
+      handleController();
     };
 
     // Hide the loading screen

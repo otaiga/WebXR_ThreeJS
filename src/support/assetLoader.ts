@@ -6,7 +6,7 @@ type ModelAssets = {
   [key: string]: GLTF;
 };
 
-interface AssetContainer {
+export interface AssetContainer {
   models: ModelAssets;
 }
 
@@ -15,7 +15,7 @@ const assets: AssetContainer = {
 };
 
 // Models to load
-let models = ["snowScene.glb"];
+let models = ["snowScene.glb", "torch.glb"];
 
 // Loading manager to track progress
 const loadingManager = new LoadingManager();

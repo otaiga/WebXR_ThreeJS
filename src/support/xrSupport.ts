@@ -11,7 +11,7 @@ export const createControllers = (renderer: WebGLRenderer, scene: Scene) => {
 
   const line = new Line(geometry);
   line.name = "line";
-  line.scale.z = 10;
+  line.scale.z = 0;
 
   const controllers = [];
 
@@ -19,12 +19,11 @@ export const createControllers = (renderer: WebGLRenderer, scene: Scene) => {
     const controller = renderer.xr.getController(i);
     controller.add(line.clone());
     controller.userData.selectPressed = false;
-    scene.add(controller);
-    controllers.push(controller);
-
     const grip = renderer.xr.getControllerGrip(i);
     grip.add(controllerModelFactory.createControllerModel(grip));
+    scene.add(controller);
     scene.add(grip);
+    controllers.push({ controller, grip });
   }
 
   return controllers;
